@@ -37,19 +37,32 @@ export default function EventsPage() {
       {/* Search + Filters */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <input
-          className="input"
           placeholder="🔍 Search events, orgs, tags..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ flex: 1, minWidth: 200 }}
+          style={{
+            flex: 1,
+            minWidth: 200,
+            background: "#16213E",
+            border: "1px solid #2D2D50",
+            borderRadius: 8,
+            padding: "10px 14px",
+            color: "#F0F0FF",
+            fontSize: 14,
+          }}
         />
         <div style={{ display: "flex", gap: 8 }}>
           {MODES.map((m) => (
             <button
               key={m}
-              className="pill"
               onClick={() => setModeFilter(m)}
               style={{
+                padding: "4px 12px",
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
                 background: modeFilter === m ? "#6C3BFF33" : "#1E1E35",
                 color: modeFilter === m ? "#8B5CF6" : "#8B8BAD",
                 border: `1px solid ${modeFilter === m ? "#6C3BFF" : "#2D2D50"}`,

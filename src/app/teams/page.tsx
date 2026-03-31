@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TEAMMATES } from "@/lib/data/users";
 import { useAppStore } from "@/stores/useAppStore";
 
 export default function TeamsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const { showNotif } = useAppStore();
 
@@ -91,7 +93,7 @@ export default function TeamsPage() {
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 className="btn-primary"
-                style={{ flex: 1, padding: "8px 14px", fontSize: 13 }}
+                style={{ flex: 1, fontSize: 13 }}
                 onClick={() => showNotif(`Request sent to ${u.name}! 🎉`)}
               >
                 Send Request
@@ -99,7 +101,7 @@ export default function TeamsPage() {
               <button
                 className="btn-ghost"
                 style={{ flex: 1, fontSize: 13 }}
-                onClick={() => showNotif("Profile preview coming soon!")}
+                onClick={() => router.push("/profile")}
               >
                 View Profile
               </button>

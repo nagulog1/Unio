@@ -4,6 +4,33 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Notification } from "@/types";
 
+const safeLocalStorage = {
+  getItem: (key: string) => {
+    try {
+      if (typeof window === "undefined") return null;
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string) => {
+    try {
+      if (typeof window === "undefined") return;
+      window.localStorage.setItem(key, value);
+    } catch {
+      // Ignore storage write failures so UI remains usable.
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      if (typeof window === "undefined") return;
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
+  },
+};
+
 interface AppState {
   xp: number;
   streak: number;
@@ -79,17 +106,22 @@ export const useAppStore = create<AppState>()(
       // Sets are not serializable by default — handle manually
       storage: {
         getItem: (key) => {
-          const raw = localStorage.getItem(key);
+          const raw = safeLocalStorage.getItem(key);
           if (!raw) return null;
-          const parsed = JSON.parse(raw);
-          return {
-            ...parsed,
-            state: {
-              ...parsed.state,
-              bookmarked: new Set(parsed.state.bookmarked ?? []),
-              solvedChallenges: new Set(parsed.state.solvedChallenges ?? []),
-            },
-          };
+          try {
+            const parsed = JSON.parse(raw);
+            return {
+              ...parsed,
+              state: {
+                ...parsed.state,
+                bookmarked: new Set(parsed?.state?.bookmarked ?? []),
+                solvedChallenges: new Set(parsed?.state?.solvedChallenges ?? []),
+              },
+            };
+          } catch {
+            safeLocalStorage.removeItem(key);
+            return null;
+          }
         },
         setItem: (key, value) => {
           const serialized = {
@@ -100,9 +132,9 @@ export const useAppStore = create<AppState>()(
               solvedChallenges: Array.from(value.state.solvedChallenges),
             },
           };
-          localStorage.setItem(key, JSON.stringify(serialized));
+          safeLocalStorage.setItem(key, JSON.stringify(serialized));
         },
-        removeItem: (key) => localStorage.removeItem(key),
+        removeItem: (key) => safeLocalStorage.removeItem(key),
       },
     }
   )

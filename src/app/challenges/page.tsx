@@ -74,6 +74,7 @@ export default function ChallengesPage() {
             const colors = DIFF_COLORS[d];
             return (
               <button
+                type="button"
                 key={d}
                 className="pill"
                 onClick={() => setDiffFilter(d)}

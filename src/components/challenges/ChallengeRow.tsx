@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Challenge } from "@/types";
 import { difficultyColor, difficultyBg } from "@/lib/utils/difficulty";
 
@@ -10,12 +10,12 @@ interface ChallengeRowProps {
 }
 
 export default function ChallengeRow({ challenge: c, solved }: ChallengeRowProps) {
-  const router = useRouter();
-
   return (
-    <div
+    <Link
+      href={`/challenges/${c.id}`}
       className="challenge-row"
-      onClick={() => router.push(`/challenges/${c.id}`)}
+      style={{ textDecoration: "none", color: "inherit" }}
+      aria-label={`Open challenge ${c.title}`}
     >
       <div style={{ width: 32, textAlign: "center" }}>
         {solved ? (
@@ -58,6 +58,6 @@ export default function ChallengeRow({ challenge: c, solved }: ChallengeRowProps
       <div style={{ fontSize: 12, color: "#5A5A80", minWidth: 60, textAlign: "right" }}>
         {c.submissions}
       </div>
-    </div>
+    </Link>
   );
 }

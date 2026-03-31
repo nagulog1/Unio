@@ -15,7 +15,19 @@ export default function EventCard({ ev, bookmarked, onToggleBookmark, large }: E
   const router = useRouter();
 
   return (
-    <div className="event-card" onClick={() => router.push(`/events/${ev.id}`)}>
+    <div
+      onClick={() => router.push(`/events/${ev.id}`)}
+      style={{
+        background: "#1E1E35",
+        border: "1px solid #2D2D50",
+        borderRadius: 16,
+        padding: 20,
+        cursor: "pointer",
+        transition: "all 0.25s",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
       {ev.featured && (
         <div
           style={{
@@ -88,7 +100,11 @@ export default function EventCard({ ev, bookmarked, onToggleBookmark, large }: E
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button
           className="btn-primary"
-          style={{ flex: 1, padding: "8px", fontSize: 13 }}
+          style={{
+            flex: 1,
+            padding: "10px 18px",
+            fontSize: 13,
+          }}
           onClick={(e) => {
             e.stopPropagation();
             router.push(`/events/${ev.id}`);
@@ -98,7 +114,11 @@ export default function EventCard({ ev, bookmarked, onToggleBookmark, large }: E
         </button>
         <button
           className="btn-ghost"
-          style={{ padding: "8px 12px", fontSize: 16 }}
+          style={{
+            padding: "8px 12px",
+            fontSize: 16,
+            borderRadius: 8,
+          }}
           onClick={(e) => {
             e.stopPropagation();
             onToggleBookmark(ev.id);

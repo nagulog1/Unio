@@ -144,7 +144,16 @@ export default function HomePage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "#8B8BAD" }}>+50% Bonus XP Today</span>
-            <button className="btn-primary" style={{ padding: "7px 16px", fontSize: 13 }}>Solve Now →</button>
+            <button
+              className="btn-primary"
+              style={{ fontSize: 13 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/challenges/${dailyChallenge.id}`);
+              }}
+            >
+              Solve Now →
+            </button>
           </div>
         </div>
 
