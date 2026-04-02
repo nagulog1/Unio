@@ -7,7 +7,7 @@ export function useCodeRunner() {
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
 
-  const run = (onSuccess?: () => void) => {
+  const run = (onSuccess?: (result: RunResult) => void | Promise<void>) => {
     setRunning(true);
     setRunResult(null);
 
@@ -24,7 +24,7 @@ export function useCodeRunner() {
         ],
       };
       setRunResult(result);
-      onSuccess?.();
+      void onSuccess?.(result);
     }, 2000);
   };
 

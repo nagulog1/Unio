@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChallengeRow from "@/components/challenges/ChallengeRow";
-import { CHALLENGES } from "@/lib/data/challenges";
+import { CHALLENGES, getChallenges } from "@/lib/data/challenges";
 import { useAppStore, useLevel } from "@/stores/useAppStore";
 
 const DIFFICULTIES = ["All", "Easy", "Medium", "Hard"] as const;
@@ -21,8 +21,13 @@ export default function ChallengesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [diffFilter, setDiffFilter] = useState<Difficulty>("All");
   const { xp, streak, solvedChallenges } = useAppStore();
+  const [challenges, setChallenges] = useState(CHALLENGES);
 
-  const filteredChallenges = CHALLENGES.filter((c) => {
+  useEffect(() => {
+    void getChallenges().then(setChallenges).catch(() => setChallenges(CHALLENGES));
+  }, []);
+
+  const filteredChallenges = challenges.filter((c) => {
     const matchQ =
       !searchQuery ||
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

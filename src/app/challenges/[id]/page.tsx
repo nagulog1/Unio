@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { CHALLENGES } from "@/lib/data/challenges";
+import { CHALLENGES, getChallenges } from "@/lib/data/challenges";
 import { SAMPLE_CODE } from "@/lib/data/constants";
 import { useAppStore } from "@/stores/useAppStore";
 import { useCodeRunner } from "@/hooks/useCodeRunner";
@@ -17,8 +17,13 @@ export default function ChallengeDetailPage() {
   const [lang, setLang] = useState("JavaScript");
   const { solvedChallenges, markSolved, addXp, showNotif } = useAppStore();
   const { running, runResult, run, reset } = useCodeRunner();
+  const [challenges, setChallenges] = useState(CHALLENGES);
 
-  const challenge = CHALLENGES.find((c) => c.id === id);
+  useEffect(() => {
+    void getChallenges().then(setChallenges).catch(() => setChallenges(CHALLENGES));
+  }, []);
+
+  const challenge = challenges.find((c) => c.id === id);
 
   if (!challenge) {
     return (
@@ -33,13 +38,34 @@ export default function ChallengeDetailPage() {
   }
 
   const handleRun = () => {
-    run(() => {
+    run(async (result) => {
       if (!solvedChallenges.has(challenge.id)) {
         markSolved(challenge.id);
         addXp(10);
         showNotif("✓ Accepted! +10 XP earned", "success");
       } else {
         showNotif("✓ All test cases passed!", "success");
+      }
+
+      try {
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            challengeId: challenge.id,
+            code,
+            language: lang,
+            status: result.status,
+            runtime: result.runtime,
+            memory: result.memory,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Submission save failed");
+        }
+      } catch {
+        showNotif("Submission ran locally, but Firebase save failed.", "error");
       }
     });
   };

@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { EVENTS } from "@/lib/data/events";
+import { EVENTS, getEvents } from "@/lib/data/events";
 import { useAppStore } from "@/stores/useAppStore";
 import { difficultyColor, difficultyBg } from "@/lib/utils/difficulty";
 
@@ -9,8 +10,13 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { bookmarked, toggleBookmark, showNotif } = useAppStore();
+  const [events, setEvents] = useState(EVENTS);
 
-  const ev = EVENTS.find((e) => e.id === id);
+  useEffect(() => {
+    void getEvents().then(setEvents).catch(() => setEvents(EVENTS));
+  }, []);
+
+  const ev = events.find((e) => e.id === id);
 
   if (!ev) {
     return (
@@ -23,6 +29,50 @@ export default function EventDetailPage() {
       </div>
     );
   }
+
+  const handleToggleBookmark = async () => {
+    const wasBookmarked = bookmarked.has(ev.id);
+    toggleBookmark(ev.id);
+
+    try {
+      const response = await fetch(`/api/events/${ev.id}/bookmark`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Bookmark request failed");
+      }
+      showNotif(wasBookmarked ? "Bookmark removed" : "Event bookmarked!", "success");
+    } catch {
+      toggleBookmark(ev.id);
+      showNotif("Could not save bookmark to Firebase.", "error");
+    }
+  };
+
+  const handleRegister = async () => {
+    try {
+      const response = await fetch(`/api/events/${ev.id}/register`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Registration failed");
+      }
+      showNotif("🎉 Successfully registered! Check your email.", "success");
+    } catch {
+      showNotif("Registration failed to save in Firebase.", "error");
+    }
+  };
+
+  const handleAddToCalendar = async () => {
+    try {
+      const response = await fetch(`/api/events/${ev.id}/calendar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: ev.title, date: ev.date, org: ev.org, source: "event" }),
+      });
+      if (!response.ok) {
+        throw new Error("Calendar save failed");
+      }
+      showNotif("Added to calendar and stored in Firebase.", "success");
+    } catch {
+      showNotif("Calendar save failed.", "error");
+    }
+  };
 
   const similarEvents = EVENTS.filter((e) => e.id !== ev.id).slice(0, 3);
 
@@ -131,7 +181,7 @@ export default function EventDetailPage() {
             <button
               className="btn-primary"
               style={{ width: "100%", padding: "14px", fontSize: 16, marginBottom: 12 }}
-              onClick={() => showNotif("🎉 Successfully registered! Check your email.")}
+              onClick={handleRegister}
             >
               Register Now
             </button>
@@ -145,10 +195,7 @@ export default function EventDetailPage() {
             <button
               className="btn-ghost"
               style={{ width: "100%", marginBottom: 16 }}
-              onClick={() => {
-                toggleBookmark(ev.id);
-                showNotif(bookmarked.has(ev.id) ? "Bookmark removed" : "Event bookmarked!");
-              }}
+              onClick={handleToggleBookmark}
             >
               {bookmarked.has(ev.id) ? "🔖 Bookmarked" : "🔖 Bookmark"}
             </button>
@@ -165,7 +212,7 @@ export default function EventDetailPage() {
               <button
                 className="btn-ghost"
                 style={{ width: "100%" }}
-                onClick={() => showNotif("Added to Google Calendar!")}
+                onClick={handleAddToCalendar}
               >
                 📅 Add to Calendar
               </button>

@@ -36,6 +36,9 @@ export interface User {
   streak: number;
   avatar: string;
   color: string;
+  publicProfile?: boolean;
+  allowTeamRequests?: boolean;
+  showEmail?: boolean;
 }
 
 export interface Teammate {

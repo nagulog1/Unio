@@ -1,18 +1,12 @@
 "use client";
 
+import type { AppState } from "@/stores/useAppStore";
 import { useEffect, useState } from "react";
 
 interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialData: {
-    name: string;
-    college: string;
-    branch: string;
-    year: string;
-    bio: string;
-    skills: string[];
-  };
+  initialData: AppState["profile"];
   onSave: (data: EditProfileModalProps["initialData"]) => void;
 }
 

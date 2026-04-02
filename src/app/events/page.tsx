@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EventCard from "@/components/events/EventCard";
-import { EVENTS } from "@/lib/data/events";
+import { EVENTS, getEvents } from "@/lib/data/events";
 import { useAppStore } from "@/stores/useAppStore";
 
 const MODES = ["All", "Online", "Offline", "Hybrid"] as const;
@@ -11,9 +11,30 @@ type Mode = (typeof MODES)[number];
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [modeFilter, setModeFilter] = useState<Mode>("All");
-  const { bookmarked, toggleBookmark } = useAppStore();
+  const { bookmarked, toggleBookmark, showNotif } = useAppStore();
+  const [events, setEvents] = useState(EVENTS);
 
-  const filteredEvents = EVENTS.filter((e) => {
+  useEffect(() => {
+    void getEvents().then(setEvents).catch(() => setEvents(EVENTS));
+  }, []);
+
+  const handleToggleBookmark = async (eventId: string) => {
+    const wasBookmarked = bookmarked.has(eventId);
+    toggleBookmark(eventId);
+
+    try {
+      const response = await fetch(`/api/events/${eventId}/bookmark`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Bookmark request failed");
+      }
+      showNotif(wasBookmarked ? "Bookmark removed" : "Event bookmarked!", "success");
+    } catch {
+      toggleBookmark(eventId);
+      showNotif("Could not save bookmark to Firebase.", "error");
+    }
+  };
+
+  const filteredEvents = events.filter((e) => {
     const q = searchQuery.toLowerCase();
     const matchQ =
       !q ||
@@ -77,7 +98,7 @@ export default function EventsPage() {
       {/* Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
         {filteredEvents.map((ev) => (
-          <EventCard key={ev.id} ev={ev} bookmarked={bookmarked} onToggleBookmark={toggleBookmark} large />
+          <EventCard key={ev.id} ev={ev} bookmarked={bookmarked} onToggleBookmark={handleToggleBookmark} large />
         ))}
         {filteredEvents.length === 0 && (
           <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 60, color: "#5A5A80" }}>

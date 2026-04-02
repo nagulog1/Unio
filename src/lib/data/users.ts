@@ -1,5 +1,6 @@
 import type { User, Teammate } from "@/types";
-import { getAllDocs } from "@/lib/firebase/db";
+import { getAllDocs, queryDocs } from "@/lib/firebase/db";
+import { where } from "firebase/firestore";
 
 // Fallback mock data for initial experience
 const MOCK_USERS: User[] = [
@@ -39,6 +40,40 @@ export async function getTeammates(): Promise<Teammate[]> {
     return teammates.length > 0 ? teammates : MOCK_TEAMMATES;
   } catch (error) {
     console.error("Error fetching teammates from Firebase, using mock data:", error);
+    return MOCK_TEAMMATES;
+  }
+}
+
+/**
+ * Get public teammate profiles from Firestore users collection
+ */
+export async function getPublicTeammates(): Promise<Teammate[]> {
+  try {
+    const publicUsers = await queryDocs<User>("users", [where("publicProfile", "==", true)]);
+
+    if (publicUsers.length === 0) {
+      return MOCK_TEAMMATES;
+    }
+
+    return publicUsers.map((user, index) => ({
+      id: user.id,
+      name: user.name,
+      college: user.college || "Unknown College",
+      skills: user.skills || [],
+      match: Math.max(70, 95 - index * 4),
+      hackathons: user.solved ? Math.max(0, Math.floor(user.solved / 10)) : 0,
+      rating: 4.5,
+      looking: user.allowTeamRequests === false ? "Profile Only" : "Open to Requests",
+      avatar: user.name
+        .split(" ")
+        .map((part) => part[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase(),
+      color: ["#10B981", "#6C3BFF", "#F59E0B", "#EF4444", "#8B5CF6"][index % 5],
+    }));
+  } catch (error) {
+    console.error("Error fetching public teammates from Firebase, using mock data:", error);
     return MOCK_TEAMMATES;
   }
 }

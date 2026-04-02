@@ -31,7 +31,7 @@ const safeLocalStorage = {
   },
 };
 
-interface AppState {
+export interface AppState {
   xp: number;
   streak: number;
   bookmarked: Set<string>;
@@ -46,6 +46,9 @@ interface AppState {
     year: string;
     bio: string;
     skills: string[];
+    publicProfile: boolean;
+    allowTeamRequests: boolean;
+    showEmail: boolean;
   };
 
   // Actions
@@ -73,6 +76,9 @@ export const useAppStore = create<AppState>()(
         year: "3rd",
         bio: "Passionate about coding and problem solving",
         skills: ["React", "Python", "DSA", "Node.js", "ML"],
+        publicProfile: true,
+        allowTeamRequests: true,
+        showEmail: false,
       },
 
       addXp: (amount) => set((s) => ({ xp: s.xp + amount })),

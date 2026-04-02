@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import { EVENTS } from "@/lib/data/events";
@@ -33,9 +33,38 @@ export default function ProfilePage() {
   const { xp, streak, solvedChallenges, profile, updateProfile, showNotif } = useAppStore();
   const { level, levelXp, levelTitle } = useLevel();
 
-  const handleSaveProfile = (data: typeof profile) => {
+  const persistProfile = async (data: typeof profile) => {
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save profile");
+    }
+  };
+
+  const handleSaveProfile = async (data: typeof profile) => {
     updateProfile(data);
-    showNotif("✓ Profile updated successfully!", "success");
+    try {
+      await persistProfile(data);
+      showNotif("✓ Profile updated successfully!", "success");
+    } catch {
+      showNotif("Profile saved locally, but Firebase update failed.", "error");
+    }
+  };
+
+  const handleSettingToggle = async (key: "publicProfile" | "allowTeamRequests" | "showEmail", nextValue: boolean) => {
+    const nextProfile = { ...profile, [key]: nextValue };
+    updateProfile(nextProfile);
+
+    try {
+      await persistProfile(nextProfile);
+      showNotif("Settings updated!", "success");
+    } catch {
+      showNotif("Settings saved locally, but Firebase update failed.", "error");
+    }
   };
 
   return (
@@ -302,13 +331,18 @@ export default function ProfilePage() {
             <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Privacy</h3>
             {(
               [
-                ["Public Profile", true],
-                ["Show in Leaderboard", true],
-                ["Allow Team Requests", true],
-                ["Show Email", false],
+                ["Public Profile", profile.publicProfile, "publicProfile"],
+                ["Show in Leaderboard", profile.publicProfile, "publicProfile"],
+                ["Allow Team Requests", profile.allowTeamRequests, "allowTeamRequests"],
+                ["Show Email", profile.showEmail, "showEmail"],
               ] as const
-            ).map(([label, on]) => (
-              <ToggleRow key={label} label={label} defaultOn={on} onChange={() => showNotif("Privacy updated!")} />
+            ).map(([label, on, key]) => (
+              <ToggleRow
+                key={label}
+                label={label}
+                value={on}
+                onChange={(next) => handleSettingToggle(key, next)}
+              />
             ))}
           </div>
         </div>
@@ -318,8 +352,13 @@ export default function ProfilePage() {
 }
 
 // ── Toggle Row sub-component ──
-function ToggleRow({ label, defaultOn, onChange }: { label: string; defaultOn: boolean; onChange: () => void }) {
-  const [on, setOn] = useState(defaultOn);
+function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (next: boolean) => void }) {
+  const [on, setOn] = useState(value);
+
+  useEffect(() => {
+    setOn(value);
+  }, [value]);
+
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #1E1E35" }}>
       <span style={{ fontSize: 14 }}>{label}</span>
@@ -333,7 +372,11 @@ function ToggleRow({ label, defaultOn, onChange }: { label: string; defaultOn: b
           position: "relative",
           transition: "all 0.2s",
         }}
-        onClick={() => { setOn(!on); onChange(); }}
+        onClick={() => {
+          const next = !on;
+          setOn(next);
+          onChange(next);
+        }}
       >
         <div
           style={{

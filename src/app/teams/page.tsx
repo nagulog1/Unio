@@ -1,16 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TEAMMATES } from "@/lib/data/users";
+import { TEAMMATES, getPublicTeammates } from "@/lib/data/users";
 import { useAppStore } from "@/stores/useAppStore";
 
 export default function TeamsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const { showNotif } = useAppStore();
+  const { profile, updateProfile, showNotif } = useAppStore();
+  const [teammates, setTeammates] = useState(TEAMMATES);
 
-  const filtered = TEAMMATES.filter(
+  useEffect(() => {
+    void getPublicTeammates().then(setTeammates).catch(() => setTeammates(TEAMMATES));
+  }, []);
+
+  const handlePostProfile = async () => {
+    const nextProfile = { ...profile, publicProfile: true, allowTeamRequests: true };
+    updateProfile(nextProfile);
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextProfile),
+      });
+      if (!response.ok) {
+        throw new Error("Profile publish failed");
+      }
+      showNotif("Profile posted and visible to teams.", "success");
+    } catch {
+      showNotif("Profile updated locally, but Firebase publish failed.", "error");
+    }
+  };
+
+  const handleSendRequest = async (userId: string, name: string) => {
+    try {
+      const response = await fetch("/api/team-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toUserId: userId, message: `Request from ${profile.name || "a student"}` }),
+      });
+      if (!response.ok) {
+        throw new Error("Team request failed");
+      }
+      showNotif(`Request sent to ${name}! 🎉`, "success");
+    } catch {
+      showNotif("Team request could not be saved to Firebase.", "error");
+    }
+  };
+
+  const filtered = teammates.filter(
     (u) =>
       !search ||
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -30,7 +70,7 @@ export default function TeamsPage() {
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-        <button className="btn-primary" onClick={() => showNotif("Profile posted! You'll receive matching requests soon.")}>
+        <button className="btn-primary" onClick={handlePostProfile}>
           + Post My Profile
         </button>
         <input
@@ -94,7 +134,7 @@ export default function TeamsPage() {
               <button
                 className="btn-primary"
                 style={{ flex: 1, fontSize: 13 }}
-                onClick={() => showNotif(`Request sent to ${u.name}! 🎉`)}
+                onClick={() => handleSendRequest(u.id, u.name)}
               >
                 Send Request
               </button>

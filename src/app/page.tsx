@@ -1,19 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import EventCard from "@/components/events/EventCard";
-import { EVENTS } from "@/lib/data/events";
-import { USERS } from "@/lib/data/users";
-import { CHALLENGES } from "@/lib/data/challenges";
+import { EVENTS, getEvents } from "@/lib/data/events";
+import { USERS, getUsers } from "@/lib/data/users";
+import { CHALLENGES, getChallenges } from "@/lib/data/challenges";
 import { useAppStore, useLevel } from "@/stores/useAppStore";
 
 export default function HomePage() {
   const router = useRouter();
-  const { xp, streak, solvedChallenges, bookmarked, toggleBookmark } = useAppStore();
+  const { xp, streak, solvedChallenges, bookmarked, toggleBookmark, showNotif } = useAppStore();
   const { level, levelXp, levelTitle } = useLevel();
+  const [events, setEvents] = useState(EVENTS);
+  const [users, setUsers] = useState(USERS);
+  const [challenges, setChallenges] = useState(CHALLENGES);
 
-  const featuredEvents = EVENTS.filter((e) => e.featured);
-  const dailyChallenge = CHALLENGES[1];
+  useEffect(() => {
+    let mounted = true;
+
+    void Promise.all([getEvents(), getUsers(), getChallenges()])
+      .then(([nextEvents, nextUsers, nextChallenges]) => {
+        if (!mounted) return;
+        setEvents(nextEvents);
+        setUsers(nextUsers);
+        setChallenges(nextChallenges);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setEvents(EVENTS);
+        setUsers(USERS);
+        setChallenges(CHALLENGES);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const featuredEvents = events.filter((e) => e.featured);
+  const dailyChallenge = challenges[1] || CHALLENGES[1];
+
+  const handleToggleBookmark = async (eventId: string) => {
+    const wasBookmarked = bookmarked.has(eventId);
+    toggleBookmark(eventId);
+
+    try {
+      const response = await fetch(`/api/events/${eventId}/bookmark`, { method: "POST" });
+      if (!response.ok) {
+        throw new Error("Bookmark request failed");
+      }
+      showNotif(wasBookmarked ? "Bookmark removed" : "Event bookmarked!", "success");
+    } catch {
+      toggleBookmark(eventId);
+      showNotif("Could not save bookmark to Firebase.", "error");
+    }
+  };
 
   return (
     <div className="fade-in">
@@ -116,7 +158,7 @@ export default function HomePage() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
           {featuredEvents.map((ev) => (
-            <EventCard key={ev.id} ev={ev} bookmarked={bookmarked} onToggleBookmark={toggleBookmark} />
+            <EventCard key={ev.id} ev={ev} bookmarked={bookmarked} onToggleBookmark={handleToggleBookmark} />
           ))}
         </div>
       </div>
@@ -193,7 +235,7 @@ export default function HomePage() {
           <button className="btn-ghost" onClick={() => router.push("/leaderboard")}>Full Leaderboard →</button>
         </div>
 
-        {USERS.slice(0, 3).map((u, i) => (
+        {users.slice(0, 3).map((u, i) => (
           <div key={u.id} className="leaderboard-row">
             <div style={{ width: 28, textAlign: "center", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 16 }}>
               {["🥇", "🥈", "🥉"][i]}

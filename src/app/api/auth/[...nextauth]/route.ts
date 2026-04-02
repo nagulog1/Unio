@@ -1,8 +1,8 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
-import { setDocData, getDocById } from "@/lib/firebase/db";
-import { createUserDocument, getUserDocument } from "@/lib/firebase/auth";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase/admin";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -25,34 +25,55 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        // Check if user exists in Firestore
-        const existingUser = await getDocById("users", user.id || user.email || "");
-        
-        if (!existingUser) {
-          // Create new user document in Firestore
-          const userId = user.id || user.email || "";
-          await createUserDocument(
-            userId,
-            user.email || "",
-            user.name || "Anonymous",
-            user.image
-          );
+        const userId = user.id || user.email || "";
+        if (!userId) {
+          return false;
+        }
 
-          // Store OAuth account info
-          await setDocData("accounts", `${userId}-${account?.provider}`, {
+        const userRef = doc(adminDb, "users", userId);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            id: userId,
+            email: user.email || "",
+            name: user.name || "Anonymous",
+            image: user.image || null,
+            college: null,
+            branch: null,
+            year: null,
+            bio: null,
+            skills: [],
+            xp: 0,
+            streak: 0,
+            publicProfile: false,
+            allowTeamRequests: true,
+            showEmail: false,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+
+        await setDoc(
+          doc(adminDb, "accounts", `${userId}-${account?.provider}`),
+          {
             userId,
             type: account?.type,
             provider: account?.provider,
             providerAccountId: account?.providerAccountId,
-            refresh_token: account?.refresh_token,
-            access_token: account?.access_token,
-            expires_at: account?.expires_at,
-            token_type: account?.token_type,
-            scope: account?.scope,
-            id_token: account?.id_token,
-            session_state: account?.session_state,
-          });
-        }
+            refresh_token: account?.refresh_token || null,
+            access_token: account?.access_token || null,
+            expires_at: account?.expires_at || null,
+            token_type: account?.token_type || null,
+            scope: account?.scope || null,
+            id_token: account?.id_token || null,
+            session_state: account?.session_state || null,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
         return true;
       } catch (error) {
         console.error("Error in signIn callback:", error);
