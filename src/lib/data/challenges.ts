@@ -1,6 +1,8 @@
 import type { Challenge } from "@/types";
+import { getAllDocs } from "@/lib/firebase/db";
 
-export const CHALLENGES: Challenge[] = [
+// Fallback mock data
+const MOCK_CHALLENGES: Challenge[] = [
   { id: "challenge-1", title: "Two Sum", difficulty: "Easy", acceptance: 87, tags: ["Array", "Hash Map"], solved: true, submissions: "10.2M" },
   { id: "challenge-2", title: "Longest Palindrome Substring", difficulty: "Medium", acceptance: 32, tags: ["String", "DP"], solved: false, submissions: "2.1M" },
   { id: "challenge-3", title: "Merge K Sorted Lists", difficulty: "Hard", acceptance: 18, tags: ["Linked List", "Heap"], solved: false, submissions: "850K" },
@@ -10,3 +12,19 @@ export const CHALLENGES: Challenge[] = [
   { id: "challenge-7", title: "N-Queens", difficulty: "Hard", acceptance: 12, tags: ["Backtracking"], solved: false, submissions: "420K" },
   { id: "challenge-8", title: "Container With Most Water", difficulty: "Medium", acceptance: 51, tags: ["Array", "Two Pointer"], solved: true, submissions: "2.9M" },
 ];
+
+/**
+ * Get all challenges from Firebase
+ */
+export async function getChallenges(): Promise<Challenge[]> {
+  try {
+    const challenges = await getAllDocs<Challenge>("challenges");
+    return challenges.length > 0 ? challenges : MOCK_CHALLENGES;
+  } catch (error) {
+    console.error("Error fetching challenges from Firebase, using mock data:", error);
+    return MOCK_CHALLENGES;
+  }
+}
+
+// Export mock data for direct use in client components
+export const CHALLENGES: Challenge[] = MOCK_CHALLENGES;

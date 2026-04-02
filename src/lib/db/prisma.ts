@@ -1,7 +1,14 @@
-import { PrismaClient } from "@prisma/client";
+// Firebase is now used instead of Prisma
+// All database operations should use Firebase utilities from src/lib/firebase/
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+import { db, auth, storage } from "../firebase/firebase";
+import * as dbUtils from "../firebase/db";
+import * as authUtils from "../firebase/auth";
 
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+// Re-export Firebase utilities for backward compatibility
+export { db, auth, storage, dbUtils, authUtils };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// This file is kept for backward compatibility but all new code should use Firebase directly
+console.warn(
+  "Warning: src/lib/db/prisma.ts is deprecated. Use Firebase utilities from src/lib/firebase/ instead."
+);

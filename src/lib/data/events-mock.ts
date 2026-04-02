@@ -1,25 +1,6 @@
 import type { Event } from "@/types";
-import { getAllDocs } from "@/lib/firebase/db";
-import { MOCK_EVENTS } from "./events-mock";
 
-/**
- * Get all events from Firebase
- */
-export async function getEvents(): Promise<Event[]> {
-  try {
-    const events = await getAllDocs<Event>("events");
-    return events.length > 0 ? events : MOCK_EVENTS;
-  } catch (error) {
-    console.error("Error fetching events from Firebase, using mock data:", error);
-    return MOCK_EVENTS;
-  }
-}
-
-// Export mock data for direct use in client components (backward compatibility)
-export const EVENTS: Event[] = MOCK_EVENTS;
-
-// OLD EVENTS DATA (kept for migration reference - can be deleted)
-const _OLD_EVENTS: Event[] = [
+export const MOCK_EVENTS: Event[] = [
   // Software & General Tech
   {
     id: "event-1",
@@ -508,4 +489,3 @@ const _OLD_EVENTS: Event[] = [
     featured: false,
   },
 ];
-// End of old events data (for reference only)
